@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN" "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="realestate">
+    <select id="selectRealEstateGapList" resultType="gu.realestateboard.RealEstateVO" >
+
+		SELECT X.CITY,X.VILLAGE,X.DEPOSIT,X.SPACE,X.CONSTRUCTYEAR, Y.PRICE, Y.PRICE -X.DEPOSIT AS GAP  
+		FROM (
+			SELECT CITY,VILLAGE, MAX(DEPOSIT) DEPOSIT,PTYPE,SPACE,CONSTRUCTYEAR 
+			FROM TB_SEOULRENT
+			GROUP BY VILLAGE,CITY,PTYPE,SPACE,CONSTRUCTYEAR
+			HAVING CITY LIKE '%서울%' AND PTYPE ='전세'
+			ORDER BY VILLAGE
+		) X 
+		LEFT OUTER JOIN (
+			SELECT CITY,VILLAGE, MAX(PRICE) PRICE,SPACE,CONSTRUCTYEAR 
+			FROM TB_SEOULSELL 
+			GROUP BY VILLAGE,CITY,SPACE,CONSTRUCTYEAR
+			HAVING CITY LIKE '%서울%'
+			ORDER BY VILLAGE ) Y ON X.VILLAGE = Y.VILLAGE AND X.CITY = Y.CITY AND X.SPACE = Y.SPACE
+		ORDER BY GAP DESC
+
+    </select> 
+    
+    <insert id="insertBoardGroup" parameterType="gu.board9.BoardGroupVO" >
+        <selectKey resultType="String" keyProperty="bgno" order="BEFORE">
+            SELECT IFNULL(MAX(BGNO),0)+1 FROM TBL_BOARDGROUP
+        </selectKey>    
+        INSERT INTO TBL_BOARDGROUP(BGNO, BGNAME, BGUSED, BGREPLY, BGREADONLY, BGPARENT, BGDELETEFLAG, BGDATE)
+        VALUES (#{bgno}, #{bgname}, #{bgused}, #{bgreply}, #{bgreadonly}, #{bgparent}, 'N', NOW() )
+    </insert>
+    
+    <update id="updateBoardGroup" parameterType="gu.board9.BoardGroupVO">
+        UPDATE TBL_BOARDGROUP
+           SET BGNAME=#{bgname}, BGUSED=#{bgused}, BGREPLY=#{bgreply}, BGREADONLY=#{bgreadonly}
+         WHERE BGNO=#{bgno}
+    </update> 
+        
+    <select id="selectBoardGroupOne" parameterType="String" resultType="gu.board9.BoardGroupVO">
+        SELECT BGNO, BGNAME, BGUSED, BGREPLY, BGREADONLY
+          FROM TBL_BOARDGROUP
+         WHERE BGDELETEFLAG='N' AND BGNO=#{bgno} 
+    </select> 
+
+    <select id="selectBoardGroupOne4Used" parameterType="String" resultType="gu.board9.BoardGroupVO">
+        SELECT BGNO, BGNAME, BGUSED, BGREPLY, BGREADONLY
+          FROM TBL_BOARDGROUP
+         WHERE BGDELETEFLAG='N' AND BGNO=#{bgno} 
+    </select>  
+
+    <delete id="deleteBoardGroup" parameterType="String">
+        UPDATE TBL_BOARDGROUP
+           SET BGDELETEFLAG='Y'
+         WHERE BGNO=#{bgno}
+    </delete> 
+
+</mapper>
+
